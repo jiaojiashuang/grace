@@ -1,0 +1,44 @@
+ftp://podaac.jpl.nasa.gov/allData/grace/
+alternativ über 
+http://isdc.gfz-potsdam.de/index.php?module=pagesetter&func=viewpub&tid=1&pid=35
+
+read_grace_solution_series_20140128
+
+[GRACE{1}, mjdmids{1}, yearmids{1}, regulflags{1}] = ...
+    read_grace_solution_series_20140128('gfz_05_60_alternativ', ['..',filesep,'GFZ_MON_RL05_alternativ_60'], maxdegs(1));
+
+figure;imagesc(abs(log(MONS{1}(:,:,1))))
+
+
+monthID2mjdmid_20111222
+
+yearmon2mjdmid
+
+mjd2year
+
+SH_Synthesis
+
+
+
+legendreFunctions
+
+filterCoefficientsGaussian
+
+
+
+
+gaussRadius = 150;  % filter half width [km]   20000 / n_max = filter length
+factorsGauss = filterCoefficientsGaussian(gaussRadius, maxdegs(set_of_coefficients));
+lambda = pi/180 * [-180:1:180]';    % Longitude
+theta  = pi/180 * [0:1:180]';       % Co-latitude
+phi = pi/2 - theta;                 % Latitude
+
+
+
+for i=1:length(timeseries)
+    
+    fprintf(['synthesis  ',num2str(i),' of ',num2str(length(timeseries)),'\n'])
+        
+    GRACEgeo{i}(:,:,ii) = SH_Synthesis(lambda, theta, diag(factorsGauss)*(GRACE{1}(:,:,i)) );
+        
+end
