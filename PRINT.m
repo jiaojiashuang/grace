@@ -31,28 +31,28 @@ for i=1:length(mjdmid)
 end
 %% PLOTING SECTION
 
-% load coast3;
-% % Here comes lam phi;
-% {%
-% for i=1:length(phi)
-%     phi(i) = -phi(i)+90;
-%     if(lam(i) < 0)
-%          lam(i)=lam(i)+360;
-%     end
-% end
-% }
-%
+load coast3;
+% Here comes lam phi;
+for i=1:length(phi)
+    phi(i) = -phi(i)+90;
+    if(lam(i) < 0)
+         lam(i)=lam(i)+360;
+    end
+end
 %%
-% figure;
-% for i=1:length(GRACEgeo(1,1,:))
-%    imagesc(GRACEgeo(:,:,i))
-%    hold on;
-%    plot(lam, phi,'k.', 'MarkerSize', 2)
-%    pause;
-%    clf;
-% end
+figure(2);
+for i=1:length(GRACEgeo(1,1,:))
+   imagesc(GRACEgeo(:,:,i))
+   hold on;
+   plot(lam, phi,'k.', 'MarkerSize', 2)
+   colorbar;
+   str2 = sprintf('TIME =  %f', yearmid(i));
+   title(str2)
+   pause;
+   clf;
+end
 
-% %%
+%%
 lat0 = 140;
 lon0 = 350;
 
@@ -63,8 +63,8 @@ end
 % xx = linspace(1,length(yy), length(yy));
 % p = polyfit(xx,yy,1);
 % figure;
-% plot(yearmid, yy, 'Color', 'r');
-% xlim([min(yearmid), max(yearmid)])
+ plot(yearmid, yy, 'Color', 'g');
+ %xlim([min(yearmid), max(yearmid)])
 % title(type_data)
 % hold on
 
