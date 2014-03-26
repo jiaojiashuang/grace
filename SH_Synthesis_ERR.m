@@ -20,23 +20,25 @@
 % Grid: Grid of synthetized values
 
 
-function Grid = SH_Synthesis(lambda, theta, Coeff)
-
+function [Grid, Grid_Err] = SH_Synthesis_ERR(lambda, theta, Coeff, Coeffer)
 maxDegree = size(Coeff,1)-1;
 Cnm = Coeff(:,maxDegree+1:end);
 Snm = fliplr(Coeff(:,1:maxDegree+1));
+Cnmerr = Coeffer(:,maxDegree+1:end);
+Snmerr = fliplr(Coeffer(:,1:maxDegree+1));
 
 % cos,sin matrix for all lambdas and all orders
 cosm = cos([0:1:maxDegree]'*lambda');
 sinm = sin([0:1:maxDegree]'*lambda');
 
 Grid = zeros(length(theta), length(lambda));
+Grid_Err = zeros(length(theta), length(lambda));
 for k=1:length(theta) % loop over all thetas
   Pnm = legendreFunctions(theta(k), maxDegree);  % all Legendre Functions for one theta
   % compute result for all lambdas (one row) in one step (as matrix multiplications)
-  
-  Grid(k,:) =  sum( (Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
-  
-  
+%   Grid(k,:) =  sum( (Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
+%  Grid(k,:) =  sum( ((Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
+   Grid_Err(k,:) = sqrt(sum(((Cnmerr.*Pnm).*(Cnmerr.*Pnm))* (cosm .* cosm) + ...
+       (Snmerr.*Pnm).*(Snmerr.*Pnm) * (sinm.*sinm)));
 end
 
