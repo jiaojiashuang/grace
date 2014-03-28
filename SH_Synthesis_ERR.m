@@ -36,9 +36,8 @@ Grid_Err = zeros(length(theta), length(lambda));
 for k=1:length(theta) % loop over all thetas
   Pnm = legendreFunctions(theta(k), maxDegree);  % all Legendre Functions for one theta
   % compute result for all lambdas (one row) in one step (as matrix multiplications)
-%   Grid(k,:) =  sum( (Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
-%  Grid(k,:) =  sum( ((Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
-   Grid_Err(k,:) = sqrt(sum(((Cnmerr.*Pnm).*(Cnmerr.*Pnm))* (cosm .* cosm) + ...
-       (Snmerr.*Pnm).*(Snmerr.*Pnm) * (sinm.*sinm)));
+   Grid(k,:) =  sum( (Cnm.*Pnm) * cosm + (Snm.*Pnm) * sinm );
+   Grid_Err(k,:) = sum(((Cnmerr.*Pnm).*(Cnmerr.*Pnm))* (cosm .* cosm) + ...
+       (Snmerr.*Pnm).*(Snmerr.*Pnm) * (sinm.*sinm));
 end
 

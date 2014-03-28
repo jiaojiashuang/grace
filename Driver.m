@@ -2,29 +2,16 @@ clear;
 Rearth = 6378137;
 max_degree = 60;
 Cut_degree = 15;
-
-type_gfz = 'gfz_05';
-%type_gfz = 'jpl_05';
-%type_jpl = 'jpl_05';
-
-%pathGFZ = '/home/benutzer/Workspace/DATA/JPL';
-%/home/sghelichkhani/Workplace/DATA/GFZ
-pathGFZ = '/home/sghelichkhani/Workspace/DATA/TEST'
-%pathGFZ = '/home/sghelichkhani/Workspace/DATA/JPL';
-%pathCSR = '/home/benutzer/Workplace/DATA/CSR';
-%pathJPL = '/home/benutzer/Workplace/DATA/JPL';
-
+mulflag=1;
+type = 'gfz_05';
+path = '/home/siavash/Workplace/DATA/GRACE/GFZ';
 %% Reading Coefficients in
-fprintf(['Readin Data ', type_gfz, '\n'])
-[CoefGFZ, ErrCoef, mjdmidGFZ, yearmidGFZ, regulflagGFZ] = ...
-        read_grace_solution_series_20140128_ERR(type_gfz, ...
-        pathGFZ ,max_degree);
-fprintf(['Readin Data ', type_gfz, '\n'])
-[CoefGFZ, mjdmidGFZ, yearmidGFZ, regulflagGFZ] = ...
-        read_grace_solution_series_20140128(type_gfz, ...
-        pathGFZ ,max_degree);
-CoefGFZ(3,61,:)=0;
-ErrCoef(3,61,:)=0;
+fprintf(['Readin Data ', type, '\n'])
+[sphcoef, errcoef, mjdmid, yearmid, outflags] = ...
+        read_grace_solution_series_20140128_ERR(type, ...
+        path ,max_degree);
+sphcoef(3,61,:)=0;
+errcoef(3,61,:)=0;
 %% Filter with the cut off degree specified at top
 gauss_radius = 20000/Cut_degree;
 GAUSS_FILTER = ...
@@ -46,63 +33,76 @@ end
 
 %% Conversion to the field on the Sphere
 %   GFZ Conversion
-for i=1:length(mjdmidGFZ)
-    fprintf(['synthesis  ',num2str(i),' of ',num2str(length(mjdmidGFZ)),' File:', type_gfz,'\n'])
-    [geoGFZ(:,:,i), Error_GFZ(:,:,i)] = ...
-    SH_Synthesis_ERR(lambda, theta, diag(GAUSS_FILTER)*CoefGFZ(:,:,i),...
-    diag(GAUSS_FILTER)*ErrCoef(:,:,i));
+
+gridgeo = zeros(length(theta), length(lambda),length(mjdmid));
+griderr = zeros(length(theta), length(lambda),length(mjdmid));
+for i=1:length(mjdmid)
+    fprintf(['synthesis  ',num2str(i),' of ',num2str(length(mjdmid)),' File:', type,'\n'])
+    [gridgeo(:,:,i), griderr(:,:,i)] = ...
+    SH_Synthesis_ERR(lambda, theta, diag(GAUSS_FILTER)*sphcoef(:,:,i),...
+    diag(GAUSS_FILTER)*errcoef(:,:,i));
 end
-
-geoGFZ = Rearth*geoGFZ*1e6;
-Error_GFZ=Rearth*Error_GFZ*1e6;
-GFZmean10 = mean(geoGFZ,3);
-
-
+if mulflag==1
+    gridgeo = Rearth*gridgeo*1e6;
+    griderr = Rearth*griderr*1e6;
+    meangeo = mean(gridgeo,3);
+    for i=1:length(mjdmid)
+        gridgeo(:,:,i) = gridgeo(:,:,i) -meangeo;
+    end
+    mulflag=0;
+end
 %% Mean changes
 lati = 1;
 latf = 181;
 loni = 1;
 lonf = 361;
 
-trend = zeros(latf-lati+1,lonf-loni+1);
-
+trend = zeros(latf,lonf:lonf,2);
+trenerr = zeros(latf,lonf:lonf,2);
 for lat0=lati:latf
     fprintf(['LAT: ',num2str(lat0),'\n'])
     for lon0=loni:lonf
-        for i=1:length(geoGFZ(1,1,:))
-            gfz(i) = (geoGFZ(lat0,lon0,i)-GFZmean10(lat0,lon0));
+        nodedat = zeros(length(mjdmid),1);
+        nodeerr = zeros(length(mjdmid),length(mjdmid));
+        Amatrix = ones(length(mjdmid),2);
+        for i=1:length(yearmid)
+            nodedat(i,1) = gridgeo(lat0,lon0,i);
+            nodeerr(i,i) = 1/griderr(lat0,lon0,i);
+            Amatrix(i,2) = yearmid(i);
         end
-        fitgfz = polyfit(yearmidGFZ,gfz',1);       
-        trend(lat0,lon0)= fitgfz(1);
+        varian = inv(Amatrix'*nodeerr*Amatrix);
+        trenerr(lat0, lon0, 1) = varian(1,1);
+        trenerr(lat0, lon0, 2) = varian(2,2);
+        trend(lat0,lon0,:)=varian*Amatrix'*nodeerr*nodedat;
+%        fitgfz = polyfit(yearmid,nodedat,1);
     end
 end
-
+%% Plotting the Trend
 % The coastlines are loaded and corrected for our geometry
-figure;imagesc(lambda*180/pi,phi*180/pi,trend);
+figure;imagesc(lambda*180/pi,phi*180/pi,trenerr(:,:,2));
 axis xy;
 hold on;
 plot(coast_lam,coast_phi,'k.', 'MarkerSize', 2);
 colorbar;
-caxis([-3e3 +3e+3])
-title(type_gfz)
+%caxis([-1e3, +1e3])
+title(type)
 hold off;
 
-%% PLOT MAP
-for i=1:length(yearmidGFZ)
-    figure(1);
-    imagesc(lambda*180/pi,phi*180/pi, ...
-         geoGFZ(:,:,i));
-%         Error_GFZ(:,:,i));
+%% PLOT: Snapshot of the difference
+for i=1:length(yearmid)
+    figure(2);
+    imagesc(lambda*180/pi,phi*180/pi,gridgeo(:,:,i));
     axis xy;
     hold on;
     plot(coast_lam, coast_phi, 'k.','MarkerSize', 2);
     hold off;
     colorbar;
-    %caxis([-1e-3, +1e+3])
-    title(num2str(yearmidGFZ(i)));
+%    caxis([-1e+1, +1e+1])
+    title(num2str(yearmid(i)));
     pause;
     clf;
 end
+%%
 
 
 
