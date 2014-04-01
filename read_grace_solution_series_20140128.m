@@ -1,5 +1,5 @@
-function [MON, coeferr, mjdmid, yearmid, regulflag] = ...
-    read_grace_solution_series_20140128_ERR(releaseflag, releasepath, maxdeg)
+function [MON, mjdmid, yearmid, regulflag] = ...
+    read_grace_solution_series_20140128(releaseflag, releasepath, maxdeg)
 
 % Read series of GRACE solutions (or AOD background fields)
 % and write them to triangular (SC) format, with the 3rd dimension being
@@ -60,7 +60,6 @@ perzahl = size(list,1);
 mjdmid = zeros(perzahl, 1);
 %regulflag = zeros(perzahl, 1);
 MON = zeros( maxdeg+1, 2*maxdeg+1, perzahl);
-coeferr = zeros( maxdeg+1, 2*maxdeg+1, perzahl); 
 
 %% Determine whether GFZ solutions are regularized and write this to
 % regulflag
@@ -83,12 +82,10 @@ if ~strcmp(releaseflag,'itg2010') % non-ITG solutions, in GRACE SDS format
         s=fgets(fid);
         while s>0
             if strcmp(s(1:6),'GRCOF2')
-                zwi = str2num(s(8:76));
+                zwi = str2num(s(8:54));
                 if zwi(1)<=maxdeg
                     MON(zwi(1)+1, maxdeg+1-zwi(2), per) = zwi(4);
                     MON(zwi(1)+1, maxdeg+1+zwi(2), per) = zwi(3);
-                    coeferr(zwi(1)+1, maxdeg+1-zwi(2), per) = zwi(6);
-                    coeferr(zwi(1)+1, maxdeg+1+zwi(2), per) = zwi(5);
                 end
             end
             s=fgets(fid);
@@ -107,7 +104,7 @@ else    % ITG solutions, in GFC format
         end
         while s>0
             if strcmp(s(1:3),'gfc')
-                zwi = str2num(s(5:76));
+                zwi = str2num(s(5:52));
                 if zwi(1)<=maxdeg
                     MON(zwi(1)+1, maxdeg+1-zwi(2), per) = zwi(4);
                     MON(zwi(1)+1, maxdeg+1+zwi(2), per) = zwi(3);

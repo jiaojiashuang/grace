@@ -2,7 +2,6 @@ clear;
 Rearth = 6378137;
 max_degree = 60;
 Cut_degree = 15;
-mulflag=1;
 type = 'gfz_05';
 path = '/home/siavash/Workplace/DATA/GRACE/GFZ';
 %% Reading Coefficients in
@@ -12,6 +11,7 @@ fprintf(['Readin Data ', type, '\n'])
         path ,max_degree);
 sphcoef(3,61,:)=0;
 errcoef(3,61,:)=0;
+
 %% Filter with the cut off degree specified at top
 gauss_radius = 20000/Cut_degree;
 GAUSS_FILTER = ...
@@ -36,19 +36,20 @@ end
 
 gridgeo = zeros(length(theta), length(lambda),length(mjdmid));
 griderr = zeros(length(theta), length(lambda),length(mjdmid));
+mulflag=1;
 for i=1:length(mjdmid)
     fprintf(['synthesis  ',num2str(i),' of ',num2str(length(mjdmid)),' File:', type,'\n'])
     [gridgeo(:,:,i), griderr(:,:,i)] = ...
     SH_Synthesis_ERR(lambda, theta, diag(GAUSS_FILTER)*sphcoef(:,:,i),...
-    diag(GAUSS_FILTER)*errcoef(:,:,i));
+    (diag(GAUSS_FILTER).*diag(GAUSS_FILTER))*errcoef(:,:,i));
 end
 if mulflag==1
     gridgeo = Rearth*gridgeo*1e6;
     griderr = Rearth*griderr*1e6;
-    meangeo = mean(gridgeo,3);
-    for i=1:length(mjdmid)
-        gridgeo(:,:,i) = gridgeo(:,:,i) -meangeo;
-    end
+%    meangeo = mean(gridgeo,3);
+%     for i=1:length(mjdmid)
+%         gridgeo(:,:,i) = gridgeo(:,:,i) -meangeo;
+%     end
     mulflag=0;
 end
 %% Mean changes
@@ -79,7 +80,7 @@ for lat0=lati:latf
 end
 %% Plotting the Trend
 % The coastlines are loaded and corrected for our geometry
-figure;imagesc(lambda*180/pi,phi*180/pi,trenerr(:,:,2));
+figure;imagesc(lambda*180/pi,phi*180/pi,trend(:,:,2));
 axis xy;
 hold on;
 plot(coast_lam,coast_phi,'k.', 'MarkerSize', 2);
@@ -91,11 +92,11 @@ hold off;
 %% PLOT: Snapshot of the difference
 for i=1:length(yearmid)
     figure(2);
-    imagesc(lambda*180/pi,phi*180/pi,gridgeo(:,:,i));
+    imagesc(lambda*180/pi,phi*180/pi,griderr(:,:,i));
     axis xy;
     hold on;
     plot(coast_lam, coast_phi, 'k.','MarkerSize', 2);
-    hold off;
+    
     colorbar;
 %    caxis([-1e+1, +1e+1])
     title(num2str(yearmid(i)));
