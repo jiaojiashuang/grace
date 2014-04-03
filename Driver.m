@@ -1,7 +1,7 @@
 clear;
 Rearth = 6378137;
 max_degree = 60;
-Cut_degree = 15;
+Cut_degree = 25;
 type = 'gfz_05';
 path = '/home/siavash/Workplace/DATA/GRACE/GFZ';
 %% Reading Coefficients in
@@ -41,11 +41,11 @@ for i=1:length(mjdmid)
     fprintf(['synthesis  ',num2str(i),' of ',num2str(length(mjdmid)),' File:', type,'\n'])
     [gridgeo(:,:,i), griderr(:,:,i)] = ...
     SH_Synthesis_ERR(lambda, theta, diag(GAUSS_FILTER)*sphcoef(:,:,i),...
-    (diag(GAUSS_FILTER).*diag(GAUSS_FILTER))*errcoef(:,:,i));
+    diag(GAUSS_FILTER).*diag(GAUSS_FILTER)*errcoef(:,:,i).*errcoef(:,:,i));
 end
 if mulflag==1
     gridgeo = Rearth*gridgeo*1e6;
-    griderr = Rearth*griderr*1e6;
+    griderr = Rearth*sqrt(griderr)*1e6;
 %    meangeo = mean(gridgeo,3);
 %     for i=1:length(mjdmid)
 %         gridgeo(:,:,i) = gridgeo(:,:,i) -meangeo;
@@ -68,7 +68,7 @@ for lat0=lati:latf
         Amatrix = ones(length(mjdmid),2);
         for i=1:length(yearmid)
             nodedat(i,1) = gridgeo(lat0,lon0,i);
-            nodeerr(i,i) = 1/griderr(lat0,lon0,i);
+            nodeerr(i,i) = 1/(griderr(lat0,lon0,i)^2);
             Amatrix(i,2) = yearmid(i);
         end
         varian = inv(Amatrix'*nodeerr*Amatrix);
@@ -80,7 +80,7 @@ for lat0=lati:latf
 end
 %% Plotting the Trend
 % The coastlines are loaded and corrected for our geometry
-figure;imagesc(lambda*180/pi,phi*180/pi,trend(:,:,2));
+figure;imagesc(lambda*180/pi,phi*180/pi,sqrt(trenerr(:,:,2)));
 axis xy;
 hold on;
 plot(coast_lam,coast_phi,'k.', 'MarkerSize', 2);
@@ -90,8 +90,8 @@ title(type)
 hold off;
 
 %% PLOT: Snapshot of the difference
+    figure;
 for i=1:length(yearmid)
-    figure(2);
     imagesc(lambda*180/pi,phi*180/pi,griderr(:,:,i));
     axis xy;
     hold on;
